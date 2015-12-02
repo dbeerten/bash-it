@@ -10,7 +10,7 @@ Bash it provides a solid framework for using, developing and maintaining shell s
 
 ## Install
 
-1. Check out a clone of this repo to a location of your choice, such as: `git clone --depth=1 https://github.com/Bash-it/bash-it.git ~/.bash_it`
+1. Check a clone of this repo: `git clone --depth=1 https://github.com/Bash-it/bash-it.git ~/.bash_it`
 2. Run `~/.bash_it/install.sh` (it automatically backs up your `~/.bash_profile` or `~/.bashrc`, depending on your OS)
 3. Edit your modified config (`~/.bash_profile` or `~/.bashrc`) file in order to customize Bash it.
 4. Check out available aliases, completions and plugins and enable the ones you want to use (see the next section for more details).
@@ -33,7 +33,7 @@ bash-it help completions    # shows help for installed completions
 bash-it help plugins        # shows help for installed plugins
 ```
 
-## Your Custom scripts, aliases, themes, and functions
+## Your Custom scripts, aliases, and functions
 
 For custom scripts, and aliases, just create the following files (they'll be ignored by the git repo):
 
@@ -41,7 +41,6 @@ For custom scripts, and aliases, just create the following files (they'll be ign
 * `completion/custom.completion.bash`
 * `lib/custom.bash`
 * `plugins/custom.plugins.bash`
-* `custom/themes/<custom theme name>/<custom theme name>.theme.bash`
 
 Anything in the custom directory will be ignored, with the exception of `custom/example.bash`.
 
