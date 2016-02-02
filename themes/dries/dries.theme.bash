@@ -68,10 +68,13 @@ function winname {
   printf "\e]2;$1\a"
 }
 
+
+export LS_COLORS="no=00:fi=37:di=34:ln=36:pi=33:so=35:do=35:bd=01:cd=01:or=01:ex=32:*.tar=31:*.tgz=31:*.arj=31:*.taz=31:*.lzh=31:*.zip=31:*.z=31:*.Z=31:*.gz=31:*.bz2=31:*.deb=31:*.rpm=31:*.jar=31:*.jpg=35:*.jpeg=35:*.gif=35:*.svg=31:*.bmp=35:*.pbm=35:*.pgm=35:*.ppm=35:*.tga=35:*.xbm=35:*.xpm=35:*.tif=35:*.tiff=35:*.png=35:*.mov=35:*.mpg=35:*.mpeg=35:*.avi=35:*.fli=35:*.gl=35:*.dl=35:*.xcf=35:*.xwd=35:*.ogg=35:*.mp3=35:*.wav=35:*.css=33:*.html=32:*.htm=32"
+
 export PROMPT_DIRTRIM=3
 
 function prompt_command() {
-    PS1="\n${icon_start} ${white}\t${normal} | $(virtualenv_prompt)${blue}\u${normal}${icon_host}${cyan}\h${normal}${icon_directory}${green}\w${normal}\$([[ -n \$(git branch 2> /dev/null) ]] && echo \" on ${icon_branch}\")${red}$(scm_prompt_info)${normal}\n${icon_end}"
+    PS1="\n${icon_start} ${white}\t${normal} | $(virtualenv_prompt)${blue}\u${normal}${icon_host}${cyan}\h${normal}${icon_directory}${green}\w${normal}\$([[ -n \$(git branch 2> /dev/null) ]] && echo \" on ${icon_branch}\")${red}$(scm_prompt_info)${normal}\n${icon_end}${normal}"
     PS2="${icon_end}"
 }
 
