@@ -74,8 +74,17 @@ export LS_COLORS="no=00:fi=37:di=34:ln=36:pi=33:so=35:do=35:bd=01:cd=01:or=01:ex
 export PROMPT_DIRTRIM=3
 
 function prompt_command() {
-    PS1="\n${icon_start} ${white}\t${normal} | $(virtualenv_prompt)${blue}\u${normal}${icon_host}${cyan}\h${normal}${icon_directory}${green}\w${normal}\$([[ -n \$(git branch 2> /dev/null) ]] && echo \" on ${icon_branch}\")${red}$(scm_prompt_info)${normal}\n${icon_end}${normal}"
-    PS2="${icon_end}"
+    PS1="\n${icon_start} ${white}\t${normal} | $(virtualenv_prompt)${blue}\u${normal}${icon_host}${cyan}\h${normal}${icon_directory}${green}\w${normal}\$([[ -n \$(git branch 2> /dev/null) ]] && echo \" on ${icon_branch}\")${red}$(scm_prompt_info)${normal}\n${icon_end}${red}\$ ${yellow}"
+    PS2="${normal}${icon_end}"
 }
+
+preexec () { :; }
+preexec_invoke_exec () {
+    [ -n "$COMP_LINE" ] && return  # do nothing if completing
+    [ "$BASH_COMMAND" = "$PROMPT_COMMAND" ] && return # don't cause a preexec for $PROMPT_COMMAND
+    local this_command=`HISTTIMEFORMAT= history 1 | sed -e "s/^[ ]*[0-9]*[ ]*//"`;
+    preexec "$this_command"
+}
+trap '[[ -t 1 ]] && tput sgr0' DEBUG
 
 PROMPT_COMMAND=prompt_command;
