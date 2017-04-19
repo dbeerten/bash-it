@@ -172,3 +172,13 @@ alias varnishstatus='iptables -L -t nat |grep -q 6081; if [ "test$?" = "test0" ]
 
 
 alias phpstorm='open -a /Applications/PhpStorm.app "`pwd`"'
+
+alias ssl-toggle='
+    sudo mv /usr/local/etc/apache2/2.4/httpd.conf /usr/local/etc/apache2/2.4/httpd_back.conf;
+    sudo mv /usr/local/etc/apache2/2.4/httpd.conf.toggle /usr/local/etc/apache2/2.4/httpd.conf;
+    sudo mv /usr/local/etc/apache2/2.4/httpd_back.conf /usr/local/etc/apache2/2.4/httpd.conf.toggle;
+    sudo pkill -9 httpd;
+    sudo pkill -9 httpd;
+    sudo pkill -9 httpd;
+    sleep 3;
+    sudo apachectl start'
