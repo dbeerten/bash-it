@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+CLOCK_CHAR_THEME_PROMPT_PREFIX=''
+CLOCK_CHAR_THEME_PROMPT_SUFFIX=''
+CLOCK_THEME_PROMPT_PREFIX=''
+CLOCK_THEME_PROMPT_SUFFIX=''
+
 THEME_PROMPT_HOST='\H'
 
 SCM_CHECK=${SCM_CHECK:=true}
@@ -13,14 +18,18 @@ SCM_THEME_TAG_PREFIX='tag:'
 SCM_THEME_DETACHED_PREFIX='detached:'
 SCM_THEME_BRANCH_TRACK_PREFIX=' → '
 SCM_THEME_BRANCH_GONE_PREFIX=' ⇢ '
+SCM_THEME_CURRENT_USER_PREFFIX=' ☺︎ '
+SCM_THEME_CURRENT_USER_SUFFIX=''
+SCM_THEME_CHAR_PREFIX=''
+SCM_THEME_CHAR_SUFFIX=''
 
-CLOCK_CHAR='☆'
-THEME_CLOCK_CHECK=${THEME_CLOCK_CHECK:=true}
 THEME_BATTERY_PERCENTAGE_CHECK=${THEME_BATTERY_PERCENTAGE_CHECK:=true}
 
 SCM_GIT_SHOW_DETAILS=${SCM_GIT_SHOW_DETAILS:=true}
 SCM_GIT_SHOW_REMOTE_INFO=${SCM_GIT_SHOW_REMOTE_INFO:=auto}
 SCM_GIT_IGNORE_UNTRACKED=${SCM_GIT_IGNORE_UNTRACKED:=false}
+SCM_GIT_SHOW_CURRENT_USER=${SCM_GIT_SHOW_CURRENT_USER:=false}
+SCM_GIT_SHOW_MINIMAL_INFO=${SCM_GIT_SHOW_MINIMAL_INFO:=false}
 
 SCM_GIT='git'
 SCM_GIT_CHAR='±'
@@ -85,11 +94,92 @@ function scm_prompt_vars {
 function scm_prompt_info {
   scm
   scm_prompt_char
+  scm_prompt_info_common
+}
+
+function scm_prompt_char_info {
+  scm_prompt_char
+  echo -ne "${SCM_THEME_CHAR_PREFIX}${SCM_CHAR}${SCM_THEME_CHAR_SUFFIX}"
+  scm_prompt_info_common
+}
+
+function scm_prompt_info_common {
   SCM_DIRTY=0
   SCM_STATE=''
-  [[ $SCM == $SCM_GIT ]] && git_prompt_info && return
-  [[ $SCM == $SCM_HG ]] && hg_prompt_info && return
-  [[ $SCM == $SCM_SVN ]] && svn_prompt_info && return
+
+  if [[ ${SCM} == ${SCM_GIT} ]]; then
+    if [[ ${SCM_GIT_SHOW_MINIMAL_INFO} == true ]]; then
+      # user requests minimal git status information
+      git_prompt_minimal_info
+    else
+      # more detailed git status
+      git_prompt_info
+    fi
+    return
+  fi
+
+  # TODO: consider adding minimal status information for hg and svn
+  [[ ${SCM} == ${SCM_HG} ]] && hg_prompt_info && return
+  [[ ${SCM} == ${SCM_SVN} ]] && svn_prompt_info && return
+}
+
+function git_prompt_minimal_info {
+  local ref
+  local status
+  local git_status_flags=('--porcelain')
+  SCM_STATE=${SCM_THEME_PROMPT_CLEAN}
+
+  if [[ "$(command git config --get bash-it.hide-status)" != "1" ]]; then
+    # Get the branch reference
+    ref=$(command git symbolic-ref -q HEAD 2> /dev/null) || \
+    ref=$(command git rev-parse --short HEAD 2> /dev/null) || return 0
+    SCM_BRANCH=${SCM_THEME_BRANCH_PREFIX}${ref#refs/heads/}
+
+    # Get the status
+    [[ "${SCM_GIT_IGNORE_UNTRACKED}" = "true" ]] && git_status_flags+='-untracked-files=no'
+    status=$(command git status ${git_status_flags} 2> /dev/null | tail -n1)
+
+    if [[ -n ${status} ]]; then
+      SCM_DIRTY=1
+      SCM_STATE=${SCM_THEME_PROMPT_DIRTY}
+    fi
+
+    # Output the git prompt
+    SCM_PREFIX=${SCM_THEME_PROMPT_PREFIX}
+    SCM_SUFFIX=${SCM_THEME_PROMPT_SUFFIX}
+    echo -e "${SCM_PREFIX}${SCM_BRANCH}${SCM_STATE}${SCM_SUFFIX}"
+  fi
+}
+
+function git_status_summary {
+  awk '
+  BEGIN {
+    untracked=0;
+    unstaged=0;
+    staged=0;
+  }
+  {
+    if (!after_first && $0 ~ /^##.+/) {
+      print $0
+      seen_header = 1
+    } else if ($0 ~ /^\?\? .+/) {
+      untracked += 1
+    } else {
+      if ($0 ~ /^.[^ ] .+/) {
+        unstaged += 1
+      }
+      if ($0 ~ /^[^ ]. .+/) {
+        staged += 1
+      }
+    }
+    after_first = 1
+  }
+  END {
+    if (!seen_header) {
+      print
+    }
+    print untracked "\t" unstaged "\t" staged
+  }'
 }
 
 function git_prompt_vars {
@@ -97,14 +187,14 @@ function git_prompt_vars {
   SCM_STATE=${GIT_THEME_PROMPT_CLEAN:-$SCM_THEME_PROMPT_CLEAN}
   if [[ "$(git config --get bash-it.hide-status)" != "1" ]]; then
     [[ "${SCM_GIT_IGNORE_UNTRACKED}" = "true" ]] && local git_status_flags='-uno'
-    local status="$(git status -b --porcelain ${git_status_flags} 2> /dev/null ||
-		            git status --porcelain ${git_status_flags} 2> /dev/null)"
-    if [[ -n "${status}" ]] && [[ "${status}" != "\n" ]] && [[ -n "$(grep -v ^# <<< "${status}")" ]]; then
+    local status_lines=$((git status --porcelain ${git_status_flags} -b 2> /dev/null ||
+                          git status --porcelain ${git_status_flags}    2> /dev/null) | git_status_summary)
+    local status=$(awk 'NR==1' <<< "$status_lines")
+    local counts=$(awk 'NR==2' <<< "$status_lines")
+    IFS=$'\t' read untracked_count unstaged_count staged_count <<< "$counts"
+    if [[ "${untracked_count}" -gt 0 || "${unstaged_count}" -gt 0 || "${staged_count}" -gt 0 ]]; then
       SCM_DIRTY=1
       if [[ "${SCM_GIT_SHOW_DETAILS}" = "true" ]]; then
-        local untracked_count="$(egrep -c '^\?\? .+' <<< "${status}")"
-        local unstaged_count="$(egrep -c '^.[^ ?#] .+' <<< "${status}")"
-        local staged_count="$(egrep -c '^[^ ?#]. .+' <<< "${status}")"
         [[ "${staged_count}" -gt 0 ]] && details+=" ${SCM_GIT_STAGED_CHAR}${staged_count}" && SCM_DIRTY=3
         [[ "${unstaged_count}" -gt 0 ]] && details+=" ${SCM_GIT_UNSTAGED_CHAR}${unstaged_count}" && SCM_DIRTY=2
         [[ "${untracked_count}" -gt 0 ]] && details+=" ${SCM_GIT_UNTRACKED_CHAR}${untracked_count}" && SCM_DIRTY=1
@@ -112,6 +202,8 @@ function git_prompt_vars {
       SCM_STATE=${GIT_THEME_PROMPT_DIRTY:-$SCM_THEME_PROMPT_DIRTY}
     fi
   fi
+
+  [[ "${SCM_GIT_SHOW_CURRENT_USER}" == "true" ]] && details+="$(git_user_info)"
 
   SCM_CHANGE=$(git rev-parse --short HEAD 2>/dev/null)
 
@@ -220,16 +312,16 @@ function hg_prompt_vars {
 
     HG_ROOT=$(get_hg_root)
 
-    if [ -f $HG_ROOT/branch ]; then
+    if [ -f "$HG_ROOT/branch" ]; then
         # Mercurial holds it's current branch in .hg/branch file
-        SCM_BRANCH=$(cat $HG_ROOT/branch)
+        SCM_BRANCH=$(cat "$HG_ROOT/branch")
     else
         SCM_BRANCH=$(hg summary 2> /dev/null | grep branch: | awk '{print $2}')
     fi
 
-    if [ -f $HG_ROOT/dirstate ]; then
+    if [ -f "$HG_ROOT/dirstate" ]; then
         # Mercurial holds various information about the working directory in .hg/dirstate file. More on http://mercurial.selenic.com/wiki/DirState
-        SCM_CHANGE=$(hexdump -n 10 -e '1/1 "%02x"' $HG_ROOT/dirstate | cut -c-12)
+        SCM_CHANGE=$(hexdump -n 10 -e '1/1 "%02x"' "$HG_ROOT/dirstate" | cut -c-12)
     else
         SCM_CHANGE=$(hg summary 2> /dev/null | grep parent: | awk '{print $2}')
     fi
@@ -237,8 +329,8 @@ function hg_prompt_vars {
 
 function rvm_version_prompt {
   if which rvm &> /dev/null; then
-    rvm=$(rvm tools identifier) || return
-    if [ $rvm != "system" ]; then
+    rvm=$(rvm-prompt) || return
+    if [ -n "$rvm" ]; then
       echo -e "$RVM_THEME_PROMPT_PREFIX$rvm$RVM_THEME_PROMPT_SUFFIX"
     fi
   fi
@@ -301,6 +393,35 @@ function python_version_prompt {
   echo -e "$(virtualenv_prompt)$(condaenv_prompt)$(py_interp_prompt)"
 }
 
+function git_user_info {
+  # support two or more initials, set by 'git pair' plugin
+  SCM_CURRENT_USER=$(git config user.initials | sed 's% %+%')
+  # if `user.initials` weren't set, attempt to extract initials from `user.name`
+  [[ -z "${SCM_CURRENT_USER}" ]] && SCM_CURRENT_USER=$(printf "%s" $(for word in $(git config user.name | tr 'A-Z' 'a-z'); do printf "%1.1s" $word; done))
+  [[ -n "${SCM_CURRENT_USER}" ]] && printf "%s" "$SCM_THEME_CURRENT_USER_PREFFIX$SCM_CURRENT_USER$SCM_THEME_CURRENT_USER_SUFFIX"
+}
+
+function clock_char {
+  CLOCK_CHAR=${THEME_CLOCK_CHAR:-"⌚"}
+  CLOCK_CHAR_COLOR=${THEME_CLOCK_CHAR_COLOR:-"$normal"}
+  SHOW_CLOCK_CHAR=${THEME_SHOW_CLOCK_CHAR:-"true"}
+
+  if [[ "${SHOW_CLOCK_CHAR}" = "true" ]]; then
+    echo -e "${CLOCK_CHAR_COLOR}${CLOCK_CHAR_THEME_PROMPT_PREFIX}${CLOCK_CHAR}${CLOCK_CHAR_THEME_PROMPT_SUFFIX}"
+  fi
+}
+
+function clock_prompt {
+  CLOCK_COLOR=${THEME_CLOCK_COLOR:-"$normal"}
+  CLOCK_FORMAT=${THEME_CLOCK_FORMAT:-"%H:%M:%S"}
+  [ -z $THEME_SHOW_CLOCK ] && THEME_SHOW_CLOCK=${THEME_CLOCK_CHECK:-"true"}
+  SHOW_CLOCK=$THEME_SHOW_CLOCK
+
+  if [[ "${SHOW_CLOCK}" = "true" ]]; then
+    CLOCK_STRING=$(date +"${CLOCK_FORMAT}")
+    echo -e "${CLOCK_COLOR}${CLOCK_THEME_PROMPT_PREFIX}${CLOCK_STRING}${CLOCK_THEME_PROMPT_SUFFIX}"
+  fi
+}
 
 # backwards-compatibility
 function git_prompt_info {
@@ -320,18 +441,11 @@ function hg_prompt_info() {
 
 function scm_char {
   scm_prompt_char
-  echo -e "$SCM_CHAR"
+  echo -e "${SCM_THEME_CHAR_PREFIX}${SCM_CHAR}${SCM_THEME_CHAR_SUFFIX}"
 }
 
 function prompt_char {
     scm_char
-}
-
-function clock_char {
-    if [[ "${THEME_CLOCK_CHECK}" = true ]]; then
-        DATE_STRING=$(date +"%Y-%m-%d %H:%M:%S")
-        echo -e "${bold_cyan}$DATE_STRING ${red}$CLOCK_CHAR"
-    fi
 }
 
 function battery_char {
@@ -352,3 +466,32 @@ if [ ! -e $BASH_IT/plugins/enabled/battery.plugin.bash ]; then
 	echo -n
     }
 fi
+
+function aws_profile {
+  if [[ $AWS_DEFAULT_PROFILE ]]; then
+    echo -e "${AWS_DEFAULT_PROFILE}"
+  else
+    echo -e "default"
+  fi
+}
+
+function safe_append_prompt_command {
+    local prompt_re
+
+    # Set OS dependent exact match regular expression
+    if [[ ${OSTYPE} == darwin* ]]; then
+      # macOS
+      prompt_re="[[:<:]]${1}[[:>:]]"
+    else
+      # Linux, FreeBSD, etc.
+      prompt_re="\<${1}\>"
+    fi
+
+    if [[ ${PROMPT_COMMAND} =~ ${prompt_re} ]]; then
+      return
+    elif [[ -z ${PROMPT_COMMAND} ]]; then
+      PROMPT_COMMAND="${1}"
+    else
+      PROMPT_COMMAND="${1};${PROMPT_COMMAND}"
+    fi
+}
