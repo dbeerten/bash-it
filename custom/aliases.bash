@@ -156,7 +156,8 @@ fi
 alias kd="cd /opt/kDeploy/tools"
 
 # Lock the screen (when going AFK)
-alias afk="/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend"
+#alias afk="/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend"
+alias afk="pmset sleepnow"
 
 # Reload the shell (i.e. invoke as a login shell)
 alias reload="exec $SHELL -l"
@@ -172,3 +173,6 @@ alias varnishstatus='iptables -L -t nat |grep -q 6081; if [ "test$?" = "test0" ]
 
 
 alias phpstorm='open -a /Applications/PhpStorm.app "`pwd`"'
+
+alias killUI='killall -KILL SystemUIServer'
+

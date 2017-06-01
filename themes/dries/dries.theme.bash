@@ -89,4 +89,4 @@ trap '[[ -t 1 ]] && tput sgr0' DEBUG
 
 PROMPT_COMMAND=prompt_command;
 
-export PS1='\[\033[0;37m\][\t\[\033[0;37m\]]\[\033[0;33m\][\[\033[0;36m\]\u\[\033[0;36m\]@\[\033[0;36m\]\h \[\033[0;32m\]\w\[\033[0;33m\]]\[\033[0;31m\]$(__git_ps1 "(%s)")\[\033[0;37m\]\\$ \[\033[00m\]'
+export PATH="/usr/local/opt/elasticsearch@2.4/bin:$PATH"
