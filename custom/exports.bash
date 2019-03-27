@@ -1,7 +1,8 @@
 # Set the default editor
-if [ -f /usr/local/bin/subl ]; then
-    export EDITOR='subl -w'
-elif [ -f /usr/local/bin/mate ]; then
+#if [ -f /usr/local/bin/subl ]; then
+#    export EDITOR='subl -w'
+#elif [ -f /usr/local/bin/mate ]; then
+if [ -f /usr/local/bin/mate ]; then
     export EDITOR='mate'
     export GIT_EDITOR='mate -wl1'
 else
@@ -37,7 +38,11 @@ export LESS_TERMCAP_md="$ORANGE"
 export MANPAGER="less -X"
 
 # Always enable colored `grep` output
-export GREP_OPTIONS="--color=auto"
+#export GREP_OPTIONS="--color=auto"
+alias grep="grep --color=auto"
+alias fgrep="fgrep --color=auto"
+alias egrep="egrep --color=auto"
+
 
 # Link Homebrew casks in `/Applications` rather than `~/Applications`
 export HOMEBREW_CASK_OPTS="--appdir=/Applications"

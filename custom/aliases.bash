@@ -121,7 +121,7 @@ alias plistbuddy="/usr/libexec/PlistBuddy"
 
 # Ring the terminal bell, and put a badge on Terminal.app’s Dock icon
 # (useful when executing time-consuming commands)
-alias badge="tput bel"
+#alias badge="tput bel"
 
 # Intuitive map function
 # For example, to list all directories that contain a certain file:
@@ -175,4 +175,6 @@ alias varnishstatus='iptables -L -t nat |grep -q 6081; if [ "test$?" = "test0" ]
 alias phpstorm='open -a /Applications/PhpStorm.app "`pwd`"'
 
 alias killUI='killall -KILL SystemUIServer'
+
+alias code=\"/Applications/Visual\ Studio\ Code.app/contents/Resources/app/bin/code\"
 
