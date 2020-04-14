@@ -319,9 +319,9 @@ function o() {
 # opens the given project
 function p() {
     if [ $# -eq 0 ]; then
-        cd /home/projects
+        cd ~/projects/
     else
-        cd /home/projects/$@/data/$@
+        cd ~/projects/kuma/$@
     fi
 }
 
@@ -353,4 +353,12 @@ function update_terminal_cwd() {
     local REPLACE='%20'
     local PWD_URL="file://$HOSTNAME${PWD//$SEARCH/$REPLACE}"
     printf '\e]7;%s\a' "$PWD_URL"
+}
+
+npm() {
+    if [[ $@ == "uis" ]]; then
+        nvm use && npm install && npm start
+    else
+        command npm "$@"
+    fi
 }

@@ -16,6 +16,7 @@ alias g="git"
 alias st="status"
 alias h="history"
 alias j="jobs"
+alias sp="spaceport"
 
 alias hist='history | grep $1' #Requires one input
 
@@ -157,7 +158,8 @@ alias kd="cd /opt/kDeploy/tools"
 
 # Lock the screen (when going AFK)
 #alias afk="/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend"
-alias afk="pmset sleepnow"
+#alias afk="pmset sleepnow"
+alias afk="open -a ScreenSaverEngine"
 
 # Reload the shell (i.e. invoke as a login shell)
 alias reload="exec $SHELL -l"
@@ -177,4 +179,3 @@ alias phpstorm='open -a /Applications/PhpStorm.app "`pwd`"'
 alias killUI='killall -KILL SystemUIServer'
 
 alias code=\"/Applications/Visual\ Studio\ Code.app/contents/Resources/app/bin/code\"
-
