@@ -1,3 +1,6 @@
+# Load after the other completions to understand what needs to be completed
+# BASH_IT_LOAD_PRIORITY: 365
+
 cite about-plugin
 about-plugin 'Automatic completion of aliases'
 
@@ -26,8 +29,7 @@ function alias_completion {
     (( ${#completions[@]} == 0 )) && return 0
 
     # create temporary file for wrapper functions and completions
-    rm -f "/tmp/${namespace}-*.tmp" # preliminary cleanup
-    local tmp_file; tmp_file="$(mktemp "/tmp/${namespace}-${RANDOM}XXX.tmp")" || return 1
+    local tmp_file; tmp_file="$(mktemp -t "${namespace}-${RANDOM}XXXXXX")" || return 1
 
     local completion_loader; completion_loader="$(complete -p -D 2>/dev/null | sed -Ene 's/.* -F ([^ ]*).*/\1/p')"
 
@@ -54,7 +56,7 @@ function alias_completion {
                 continue
             fi
         fi
-        local new_completion="$(complete -p "$alias_cmd")"
+        local new_completion="$(complete -p "$alias_cmd" 2>/dev/null)"
 
         # create a wrapper inserting the alias arguments if any
         if [[ -n $alias_args ]]; then
@@ -63,20 +65,31 @@ function alias_completion {
             if [[ "${compl_func#_$namespace::}" == $compl_func ]]; then
                 local compl_wrapper="_${namespace}::${alias_name}"
                     echo "function $compl_wrapper {
+                        local compl_word=\$2
+                        local prec_word=\$3
+                        # check if prec_word is the alias itself. if so, replace it
+                        # with the last word in the unaliased form, i.e.,
+                        # alias_cmd + ' ' + alias_args.
+                        if [[ \$COMP_LINE == \"\$prec_word \$compl_word\" ]]; then
+                            prec_word=\"$alias_cmd $alias_args\"
+                            prec_word=\${prec_word#* }
+                        fi
                         (( COMP_CWORD += ${#alias_arg_words[@]} ))
                         COMP_WORDS=($alias_cmd $alias_args \${COMP_WORDS[@]:1})
                         (( COMP_POINT -= \${#COMP_LINE} ))
                         COMP_LINE=\${COMP_LINE/$alias_name/$alias_cmd $alias_args}
                         (( COMP_POINT += \${#COMP_LINE} ))
-                        $compl_func
+                        $compl_func \"$alias_cmd\" \"\$compl_word\" \"\$prec_word\"
                     }" >> "$tmp_file"
                     new_completion="${new_completion/ -F $compl_func / -F $compl_wrapper }"
             fi
         fi
 
         # replace completion trigger by alias
-        new_completion="${new_completion% *} $alias_name"
-        echo "$new_completion" >> "$tmp_file"
+        if [[ -n $new_completion ]]; then
+            new_completion="${new_completion% *} $alias_name"
+            echo "$new_completion" >> "$tmp_file"
+        fi
     done < <(alias -p | sed -Ene "s/$alias_regex/\2 '\3' '\4'/p")
     source "$tmp_file" && rm -f "$tmp_file"
 }; alias_completion
