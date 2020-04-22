@@ -10,6 +10,9 @@ SCM_GIT_CHAR_ICON_BRANCH=${BARBUK_GIT_BRANCH_ICON:=''}
 SCM_HG_CHAR=${BARBUK_HG_CHAR:='☿ '}
 SCM_SVN_CHAR=${BARBUK_SVN_CHAR:='⑆ '}
 EXIT_CODE_ICON=${BARBUK_EXIT_CODE_ICON:=' '}
+CLOCK_ICON=''
+THEME_CLOCK_COLOR="${red}"
+CLOCK_THEME_PROMPT_PREFIX="${CLOCK_ICON}${yellow}  "
 
 # Ssh user and hostname display
 SSH_INFO=${BARBUK_SSH_INFO:=true}
@@ -85,10 +88,10 @@ function _prompt {
         else
             host="\h"
         fi
-        ssh_info="${bold_blue}\u${bold_orange}@${cyan}$host ${bold_orange}in"
+        ssh_info=" ${bold_blue}\u${bold_orange}@${cyan}$host ${bold_orange}in"
     fi
 
-    PS1="\\n${ssh_info} ${purple}$(scm_char)${dir_color}\\w${normal}$(scm_prompt_info)${exit_code}"
+    PS1="$(clock_prompt)${normal} |${ssh_info} ${purple}$(scm_char)${dir_color}\\w${normal}$(scm_prompt_info)${exit_code}"
 
     [[ ${#PS1} -gt $((COLUMNS*3)) ]] && wrap_char="\\n"
     PS1="${PS1}${wrap_char}❯${normal} "
